@@ -27,10 +27,8 @@ class RealmService {
     return realm.all<Product>().query('category == \$0', [category]);
   }
 
-  // Обновление продукта
-  void updateProduct(Product product, {String? id,String? name, String? quantity, DateTime? expirationDate, String? category}) {
+  void updateProduct(Product product, {String? name, String? quantity, DateTime? expirationDate, String? category}) {
     realm.write(() {
-      if (id != null) product.id = id;
       if (name != null) product.name = name;
       if (quantity != null) product.quantity = quantity;
       if (expirationDate != null) product.expirationDate = expirationDate;
