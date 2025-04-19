@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:uuid/uuid.dart';
 import 'fridge_screen.dart';
+import 'pantry_screen.dart'; // Добавляем импорт нового экрана
 import 'services/realm_service.dart';
 import 'models/product.dart';
 import 'add_product_screen.dart';
@@ -18,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 2) { // "edit" - третий элемент (индекс 2)
+    if (index == 2) { // "add" - третий элемент (индекс 2)
       Navigator.push(context, MaterialPageRoute(builder: (context) => AddProductScreen()));
     }
   }
@@ -79,20 +79,25 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    width: 180,
-                    height: 350,
-                    decoration: BoxDecoration(
-                      color: Colors.lightGreen[600],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'AMBRY',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                  GestureDetector( // Добавляем GestureDetector для AMBRY
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => PantryScreen()));
+                    },
+                    child: Container(
+                      width: 180,
+                      height: 350,
+                      decoration: BoxDecoration(
+                        color: Colors.lightGreen[600],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'PANTRY',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
