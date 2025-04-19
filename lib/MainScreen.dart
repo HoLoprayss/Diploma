@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'fridge_screen.dart';
 import 'services/realm_service.dart';
 import 'models/product.dart';
+import 'add_product_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -17,7 +18,9 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
-    // Логика для навигации будет добавлена позже
+    if (index == 2) { // "edit" - третий элемент (индекс 2)
+      Navigator.push(context, MaterialPageRoute(builder: (context) => AddProductScreen()));
+    }
   }
 
   late RealmService realmService;
@@ -26,27 +29,6 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     realmService = RealmService();
-    realmService.addProduct(Product(
-      Uuid().v4(), // id
-      'Milk',      // name
-      '2 L',       // quantity
-      'Fridge',    // category
-      expirationDate: DateTime.now().add(Duration(days: 5)), // именованный параметр
-    ));
-    realmService.addProduct(Product(
-      Uuid().v4(),
-      'Cheese',
-      '200 g',
-      'Fridge',
-      expirationDate: DateTime.now().add(Duration(days: 10)),
-    ));
-    realmService.addProduct(Product(
-      Uuid().v4(),
-      'Yogurt',
-      '500 g',
-      'Fridge',
-      expirationDate: DateTime.now().subtract(Duration(days: 1)),
-    ));
   }
 
   @override
@@ -154,8 +136,8 @@ class _MainScreenState extends State<MainScreen> {
             label: 'scan',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.edit),
-            label: 'edit',
+            icon: Icon(Icons.add),
+            label: 'add',
           ),
         ],
         currentIndex: _selectedIndex,
