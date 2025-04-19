@@ -1,0 +1,169 @@
+import 'package:flutter/material.dart';
+
+import 'package:uuid/uuid.dart';
+import 'fridge_screen.dart';
+import 'services/realm_service.dart';
+import 'models/product.dart';
+
+class MainScreen extends StatefulWidget {
+  @override
+  _MainScreenState createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    // Логика для навигации будет добавлена позже
+  }
+
+  late RealmService realmService;
+
+  @override
+  void initState() {
+    super.initState();
+    realmService = RealmService();
+    realmService.addProduct(Product(
+      Uuid().v4(), // id
+      'Milk',      // name
+      '2 L',       // quantity
+      'Fridge',    // category
+      expirationDate: DateTime.now().add(Duration(days: 5)), // именованный параметр
+    ));
+    realmService.addProduct(Product(
+      Uuid().v4(),
+      'Cheese',
+      '200 g',
+      'Fridge',
+      expirationDate: DateTime.now().add(Duration(days: 10)),
+    ));
+    realmService.addProduct(Product(
+      Uuid().v4(),
+      'Yogurt',
+      '500 g',
+      'Fridge',
+      expirationDate: DateTime.now().subtract(Duration(days: 1)),
+    ));
+  }
+
+  @override
+  void dispose() {
+    realmService.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey[200], // Фон экрана
+      appBar: AppBar(
+        title: Text(
+          'MEALSAFE',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.lightGreen[600],
+        elevation: 0,
+        shape: StadiumBorder(), // Овальная форма заголовка
+        centerTitle: true, // Центрируем заголовок
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0), // Отступы по краям
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start, // Контент начинается сверху
+            crossAxisAlignment: CrossAxisAlignment.center, // Центрируем по горизонтали
+            children: [
+              // Блоки "FRIGE" и "AMBRY" в одном ряду
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Равномерный отступ между блоками
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => FridgeScreen()));
+                    },
+                    child: Container(
+                      width: 180,
+                      height: 350,
+                      decoration: BoxDecoration(color: Colors.lightGreen[600], borderRadius: BorderRadius.circular(10)),
+                      child: Center(
+                        child: Text('FRIDGE', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 180,
+                    height: 350,
+                    decoration: BoxDecoration(
+                      color: Colors.lightGreen[600],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'AMBRY',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 10), // Отступ перед блоком "LIST"
+
+              // Блок "LIST", растянутый на всю ширину
+              Container(
+                width: 370, // Растягиваем на всю ширину
+                height: 160, // Увеличиваем высоту для соответствия макету
+                decoration: BoxDecoration(
+                  color: Colors.lightGreen[600],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Center(
+                  child: Text(
+                    'LIST',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      // Нижняя панель навигации
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt),
+            label: 'scan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit),
+            label: 'edit',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white54,
+        backgroundColor: Colors.lightGreen[600],
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
