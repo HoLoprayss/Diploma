@@ -5,6 +5,7 @@ import 'pantry_screen.dart'; // Добавляем импорт нового э�
 import 'services/realm_service.dart';
 import 'models/product.dart';
 import 'add_product_screen.dart';
+import 'scan_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -18,6 +19,10 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 1) { // "add" - третий элемент (индекс 2)
+      Navigator.push(context, MaterialPageRoute(builder: (context) => ScanScreen()));
+    }
+
     if (index == 2) { // "add" - третий элемент (индекс 2)
       Navigator.push(context, MaterialPageRoute(builder: (context) => AddProductScreen()));
     }
