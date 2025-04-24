@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'preview_screen.dart';
 
 class ScanReceiptScreen extends StatefulWidget {
   @override
@@ -35,22 +36,19 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     setState(() {});
   }
 
-  Future<String> _takePicture() async {
+  Future<void> _takePicture() async {
     try {
-      await _initializeControllerFuture;
+      final imagePath = await _controller.takePicture();
+      if (!mounted) return;
 
-      final tempDir = await getTemporaryDirectory();
-      final filePath = path.join(tempDir.path, '${DateTime.now()}.png');
-
-      if (_controller.value.isTakingPicture) return '';
-
-      final XFile picture = await _controller.takePicture();
-      final File imageFile = File(picture.path);
-
-      return imageFile.path;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PreviewScreen(imageFile: File(imagePath.path)),
+        ),
+      );
     } catch (e) {
       print('Error taking picture: $e');
-      return '';
     }
   }
 
@@ -135,9 +133,6 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final imagePath = await _takePicture();
-          if (imagePath.isNotEmpty) {
-            await _processImage(imagePath);
-          }
         },
         backgroundColor: Colors.lightGreen[600],
         child: Icon(Icons.camera_alt),
