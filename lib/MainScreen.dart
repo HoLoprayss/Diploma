@@ -112,26 +112,6 @@ class _MainScreenState extends State<MainScreen> {
                 ],
               ),
               SizedBox(height: 10), // Отступ перед блоком "LIST"
-
-              // Блок "LIST", растянутый на всю ширину
-              Container(
-                width: 370, // Растягиваем на всю ширину
-                height: 160, // Увеличиваем высоту для соответствия макету
-                decoration: BoxDecoration(
-                  color: Colors.lightGreen[600],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    'LIST',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
