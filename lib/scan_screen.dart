@@ -1,10 +1,8 @@
-import 'dart:async';
 import 'dart:io';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart'; // Измененный импорт
+import 'package:camera/camera.dart';
 import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import 'preview_screen.dart';
 
 class ScanReceiptScreen extends StatefulWidget {
@@ -13,9 +11,11 @@ class ScanReceiptScreen extends StatefulWidget {
 }
 
 class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
+  late CameraController _cameraController;
+  late Future<void> _initializeCameraFuture;
+  MobileScannerController _mobileScannerController = MobileScannerController(); // Новый контроллер
   bool _isLoading = false;
+  bool _isQRMode = true;
 
   @override
   void initState() {
@@ -27,18 +27,73 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     final cameras = await availableCameras();
     final firstCamera = cameras.first;
 
-    _controller = CameraController(
+    _cameraController = CameraController(
       firstCamera,
       ResolutionPreset.medium,
     );
 
-    _initializeControllerFuture = _controller.initialize();
+    _initializeCameraFuture = _cameraController.initialize();
     setState(() {});
+  }
+
+  void _handleBarcode(Barcode barcode) { // Обновленный обработчик
+    if (barcode.rawValue != null) {
+      _mobileScannerController.stop();
+      _processQRCode(barcode.rawValue!);
+    }
+  }
+
+  Future<void> _processQRCode(String qrData) async {
+    setState(() => _isLoading = true);
+
+    try {
+      Map<String, String> params = Uri.splitQueryString(qrData);
+      String fiscalNumber = params['fn'] ?? '';
+      String fiscalDocument = params['i'] ?? '';
+      String fiscalSign = params['fp'] ?? '';
+      int operationType = int.parse(params['n'] ?? '1');
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('QR-код распознан'),
+          content: Text('Фискальный номер: $fiscalNumber\nДокумент: $fiscalDocument\nПризнак: $fiscalSign'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _mobileScannerController.start(); // Возобновление сканирования
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Ошибка'),
+          content: Text('Не удалось обработать QR-код: $e'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _mobileScannerController.start();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _takePicture() async {
     try {
-      final imagePath = await _controller.takePicture();
+      final imagePath = await _cameraController.takePicture();
       if (!mounted) return;
 
       Navigator.push(
@@ -52,57 +107,10 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     }
   }
 
-  Future<void> _processImage(String imagePath) async {
-    setState(() => _isLoading = true);
-
-    try {
-      final String recognizedText = await FlutterTesseractOcr.extractText(
-        imagePath,
-        language: 'rus',
-        args: {
-          "preserve_interword_spaces": "1",
-        },
-      );
-
-      // Показываем результат в диалоге
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Результат распознавания'),
-          content: SingleChildScrollView(
-            child: Text(recognizedText.isEmpty ? 'Текст не найден' : recognizedText),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-
-    } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Ошибка'),
-          content: Text('Не удалось распознать текст: $e'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
   @override
   void dispose() {
-    _controller.dispose();
+    _cameraController.dispose();
+    _mobileScannerController.dispose(); // Освобождение ресурсов
     super.dispose();
   }
 
@@ -112,14 +120,37 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
       appBar: AppBar(
         title: Text('Сканирование чека'),
         backgroundColor: Colors.lightGreen[600],
+        actions: [
+          IconButton(
+            icon: Icon(_isQRMode ? Icons.camera : Icons.qr_code),
+            onPressed: () {
+              setState(() {
+                _isQRMode = !_isQRMode;
+                if (_isQRMode) {
+                  _mobileScannerController.start();
+                } else {
+                  _mobileScannerController.stop();
+                }
+              });
+            },
+          ),
+        ],
       ),
-      body: FutureBuilder<void>(
-        future: _initializeControllerFuture,
+      body: _isQRMode
+          ? MobileScanner( // Новый виджет сканера
+        controller: _mobileScannerController,
+        onDetect: (capture) {
+          final barcode = capture.barcodes.first;
+          _handleBarcode(barcode);
+        },
+      )
+          : FutureBuilder<void>(
+        future: _initializeCameraFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             return Stack(
               children: [
-                CameraPreview(_controller),
+                CameraPreview(_cameraController),
                 if (_isLoading)
                   Center(child: CircularProgressIndicator()),
               ],
@@ -130,10 +161,10 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final imagePath = await _takePicture();
-        },
+      floatingActionButton: _isQRMode
+          ? null
+          : FloatingActionButton(
+        onPressed: _takePicture,
         backgroundColor: Colors.lightGreen[600],
         child: Icon(Icons.camera_alt),
       ),
