@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart'; // Измененный импорт
+import 'package:http/http.dart' as http;
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:camera/camera.dart';
-import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
-import 'preview_screen.dart';
+import 'package:uuid/uuid.dart';
+import 'package:mealsafe/models/product.dart';
+import 'package:mealsafe/preview_screen.dart';
+import 'package:mealsafe/preview_edit_screen.dart';
+import 'package:mealsafe/models/product.dart';
 
 class ScanReceiptScreen extends StatefulWidget {
   @override
@@ -11,11 +16,12 @@ class ScanReceiptScreen extends StatefulWidget {
 }
 
 class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
-  late CameraController _cameraController;
-  late Future<void> _initializeCameraFuture;
-  MobileScannerController _mobileScannerController = MobileScannerController(); // Новый контроллер
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+  MobileScannerController? _scannerController;
   bool _isLoading = false;
-  bool _isQRMode = true;
+  bool _isQRMode = true; // Переключение между QR и фото
+  final String TOKEN = '32894.FwqnuE9FZYMTdUPOs'; // токен
 
   @override
   void initState() {
@@ -27,59 +33,70 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     final cameras = await availableCameras();
     final firstCamera = cameras.first;
 
-    _cameraController = CameraController(
+    _controller = CameraController(
       firstCamera,
       ResolutionPreset.medium,
     );
 
-    _initializeCameraFuture = _cameraController.initialize();
+    _initializeControllerFuture = _controller.initialize();
     setState(() {});
   }
 
-  void _handleBarcode(Barcode barcode) { // Обновленный обработчик
-    if (barcode.rawValue != null) {
-      _mobileScannerController.stop();
+  void _handleBarcode(Barcode barcode) {
+    if (barcode.rawValue != null && !_isLoading) {
+      _scannerController?.stop();
       _processQRCode(barcode.rawValue!);
     }
   }
 
   Future<void> _processQRCode(String qrData) async {
     setState(() => _isLoading = true);
-
     try {
-      Map<String, String> params = Uri.splitQueryString(qrData);
-      String fiscalNumber = params['fn'] ?? '';
-      String fiscalDocument = params['i'] ?? '';
-      String fiscalSign = params['fp'] ?? '';
-      int operationType = int.parse(params['n'] ?? '1');
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('QR-код распознан'),
-          content: Text('Фискальный номер: $fiscalNumber\nДокумент: $fiscalDocument\nПризнак: $fiscalSign'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _mobileScannerController.start(); // Возобновление сканирования
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
+      var response = await http.post(
+        Uri.parse('https://proverkacheka.com/api/v1/check/get'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: 'qrraw=${Uri.encodeQueryComponent(qrData)}&token=32894.FwqnuE9FZYMTdUPOs',
       );
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        if (data['code'] == 1) {
+          var items = data['data']['json']['items'] as List;
+          List<Product> products = items.map((item) {
+            // String category = _determineCategory(item['name']);
+            // DateTime expirationDate = _calculateExpirationDate(category);
+            return Product(
+              Uuid().v4(),
+              item['name'],
+              item['quantity'].toString(),
+              'Pantry',
+              expirationDate: DateTime.now().add(Duration(days: 7)),
+            );
+          }).toList();
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditProductsScreen(products: products),
+            ),
+          );
+        } else {
+          throw Exception('API error: ${data['code']}');
+        }
+      } else {
+        throw Exception('HTTP error: ${response.statusCode}');
+      }
     } catch (e) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Ошибка'),
-          content: Text('Не удалось обработать QR-код: $e'),
+          content: Text('Не удалось получить данные чека: $e'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _mobileScannerController.start();
+                _scannerController?.start();
               },
               child: Text('OK'),
             ),
@@ -91,9 +108,27 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
     }
   }
 
+  // String _determineCategory(String name) {
+  //   name = name.toLowerCase();
+  //   if (name.contains('молоко') || name.contains('йогурт')) return 'Fridge';
+  //   if (name.contains('зам.')) return 'Freezer'; // Замороженные продукты
+  //   return 'Pantry';
+  // }
+  //
+  // DateTime _calculateExpirationDate(String category) {
+  //   switch (category) {
+  //     case 'Fridge':
+  //       return DateTime.now().add(Duration(days: 5));
+  //     case 'Freezer':
+  //       return DateTime.now().add(Duration(days: 30));
+  //     default:
+  //       return DateTime.now().add(Duration(days: 7));
+  //   }
+  // }
+
   Future<void> _takePicture() async {
     try {
-      final imagePath = await _cameraController.takePicture();
+      final imagePath = await _controller.takePicture();
       if (!mounted) return;
 
       Navigator.push(
@@ -109,8 +144,8 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
 
   @override
   void dispose() {
-    _cameraController.dispose();
-    _mobileScannerController.dispose(); // Освобождение ресурсов
+    _controller.dispose();
+    _scannerController?.dispose();
     super.dispose();
   }
 
@@ -126,39 +161,33 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
             onPressed: () {
               setState(() {
                 _isQRMode = !_isQRMode;
-                if (_isQRMode) {
-                  _mobileScannerController.start();
-                } else {
-                  _mobileScannerController.stop();
-                }
               });
             },
           ),
         ],
       ),
-      body: _isQRMode
-          ? MobileScanner( // Новый виджет сканера
-        controller: _mobileScannerController,
-        onDetect: (capture) {
-          final barcode = capture.barcodes.first;
-          _handleBarcode(barcode);
-        },
-      )
-          : FutureBuilder<void>(
-        future: _initializeCameraFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.done) {
-            return Stack(
-              children: [
-                CameraPreview(_cameraController),
-                if (_isLoading)
-                  Center(child: CircularProgressIndicator()),
-              ],
-            );
-          } else {
-            return Center(child: CircularProgressIndicator());
-          }
-        },
+      body: Stack(
+        children: [
+          _isQRMode
+              ? MobileScanner(
+            controller: _scannerController = MobileScannerController(),
+            onDetect: (capture) {
+              final barcode = capture.barcodes.first;
+              _handleBarcode(barcode);
+            },
+          )
+              : FutureBuilder<void>(
+            future: _initializeControllerFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return CameraPreview(_controller);
+              } else {
+                return Center(child: CircularProgressIndicator());
+              }
+            },
+          ),
+          if (_isLoading) Center(child: CircularProgressIndicator()),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: _isQRMode
