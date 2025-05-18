@@ -55,7 +55,7 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
       var response = await http.post(
         Uri.parse('https://proverkacheka.com/api/v1/check/get'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'qrraw=${Uri.encodeQueryComponent(qrData)}&token=32894.FwqnuE9FZYMTdUPOs',
+        body: 'qrraw=${Uri.encodeQueryComponent(qrData)}&token=32894.FwqnuE9FZYMTdUPOs',
       );
 
       if (response.statusCode == 200) {
@@ -152,41 +152,77 @@ class _ScanReceiptScreenState extends State<ScanReceiptScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Сканирование чека'),
-        backgroundColor: Colors.lightGreen[600],
-        actions: [
-          IconButton(
-            icon: Icon(_isQRMode ? Icons.camera : Icons.qr_code),
-            onPressed: () {
-              setState(() {
-                _isQRMode = !_isQRMode;
-              });
-            },
-          ),
-        ],
-      ),
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          _isQRMode
-              ? MobileScanner(
-            controller: _scannerController = MobileScannerController(),
-            onDetect: (capture) {
-              final barcode = capture.barcodes.first;
-              _handleBarcode(barcode);
-            },
-          )
-              : FutureBuilder<void>(
+          FutureBuilder<void>(
             future: _initializeControllerFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
                 return CameraPreview(_controller);
               } else {
-                return Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF008066)),
+                  ),
+                );
               }
             },
           ),
-          if (_isLoading) Center(child: CircularProgressIndicator()),
+          if (_isQRMode)
+            MobileScanner(
+              controller: _scannerController,
+              onDetect: (capture) {
+                final barcode = capture.barcodes.first;
+                _handleBarcode(barcode);
+              },
+            ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.7),
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Text(
+                    _isQRMode ? 'Сканирование QR-кода' : 'Сканирование чека',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _isQRMode ? Icons.photo_camera : Icons.qr_code_scanner,
+                      color: const Color(0xFF008066),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isQRMode = !_isQRMode;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
