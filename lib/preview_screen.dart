@@ -4,6 +4,7 @@ import 'package:flutter_tesseract_ocr/android_ios.dart';
 import 'package:mealsafe/models/product.dart';
 import 'package:mealsafe/preview_edit_screen.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class PreviewScreen extends StatefulWidget {
   final File imageFile;
@@ -17,13 +18,25 @@ class PreviewScreen extends StatefulWidget {
 class _PreviewScreenState extends State<PreviewScreen> {
   bool _isProcessing = false;
   final Uuid _uuid = const Uuid();
+  
+  // Основной акцентный цвет приложения
+  Color get primaryColor => Color(0xFF2A9D8F);
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Предпросмотр'),
-        backgroundColor: Colors.lightGreen[600],
+        title: Text(
+          'Предпросмотр',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: primaryColor,
         actions: [
           if (!_isProcessing)
             IconButton(
@@ -34,14 +47,29 @@ class _PreviewScreenState extends State<PreviewScreen> {
       ),
       body: Stack(
         children: [
-          Center(child: Image.file(widget.imageFile)),
+          Center(
+            child: Container(
+              color: isDark ? Colors.black : Colors.white,
+              width: double.infinity,
+              height: double.infinity,
+              child: Image.file(widget.imageFile),
+            ),
+          ),
           if (_isProcessing)
-            const Center(child: CircularProgressIndicator()),
+            Container(
+              color: Colors.black.withOpacity(0.3),
+              child: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                ),
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pop(context),
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.red.shade700,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.cancel),
       ),
     );
@@ -64,15 +92,45 @@ class _PreviewScreenState extends State<PreviewScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+      
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Ошибка'),
-          content: Text('Не удалось обработать чек: $e'),
+          title: Text(
+            'Ошибка',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: theme.textTheme.titleLarge?.color,
+            ),
+          ),
+          content: Text(
+            'Не удалось обработать чек: $e',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: theme.textTheme.bodyMedium?.color,
+            ),
+          ),
+          backgroundColor: isDark ? Color(0xFF1E2937) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
+              style: TextButton.styleFrom(
+                foregroundColor: primaryColor,
+              ),
+              child: Text(
+                'OK',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ],
         ),

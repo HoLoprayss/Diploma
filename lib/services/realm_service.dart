@@ -1,5 +1,6 @@
 import 'package:realm/realm.dart';
 import '../models/product.dart';
+import 'package:uuid/uuid.dart' as uuid_lib;
 
 class RealmService {
   late Configuration config;
@@ -11,9 +12,21 @@ class RealmService {
   }
 
   // Добавление продукта
-  void addProduct(Product product) {
+  void addProduct({String? name, String? quantity, DateTime? expirationDate, String? category, Product? product}) {
     realm.write(() {
-      realm.add(product);
+      if (product != null) {
+        realm.add(product);
+      } else if (name != null && quantity != null && category != null) {
+        // Создаем новый продукт из параметров
+        final newProduct = Product(
+          uuid_lib.Uuid().v4(),
+          name,
+          quantity,
+          category,
+          expirationDate: expirationDate,
+        );
+        realm.add(newProduct);
+      }
     });
   }
 
