@@ -12,6 +12,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'theme/theme_provider.dart';
 import 'settings_screen.dart';
+import 'shopping_screen.dart';
+import 'recipe_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -377,7 +379,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   
   Widget _buildCategoriesSection() {
     final theme = Theme.of(context);
-    
+    final width = MediaQuery.of(context).size.width;
     return SlideTransition(
       position: Tween<Offset>(
         begin: Offset(0, 0.2),
@@ -398,164 +400,128 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             ),
           ),
           SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildCategoryCard(
-                  title: 'ХОЛОДИЛЬНИК',
-                  icon: Icons.kitchen,
-                  gradientColors: [Color(0xFF2A9D8F), Color(0xFF56C4A8)],
-                  onTap: _navigateToFridge,
-                ),
-              ),
-              SizedBox(width: 16),
-              Expanded(
-                child: _buildCategoryCard(
-                  title: 'КЛАДОВАЯ',
-                  icon: Icons.storage,
-                  gradientColors: [Color(0xFFF4A261), Color(0xFFE76F51)],
-                  onTap: _navigateToPantry,
-                ),
-              ),
-            ],
+          _buildWideCategoryCard(
+            title: 'ХОЛОДИЛЬНИК',
+            icon: Icons.kitchen,
+            gradientColors: [Color(0xFF2A9D8F), Color(0xFF56C4A8)],
+            onTap: _navigateToFridge,
+          ),
+          SizedBox(height: 16),
+          _buildWideCategoryCard(
+            title: 'КЛАДОВАЯ',
+            icon: Icons.storage,
+            gradientColors: [Color(0xFFF4A261), Color(0xFFE76F51)],
+            onTap: _navigateToPantry,
+          ),
+          SizedBox(height: 16),
+          _buildWideCategoryCard(
+            title: 'ПЛАН ПОКУПОК',
+            icon: Icons.shopping_cart,
+            gradientColors: [Color(0xFF4F8FFF), Color(0xFF38B6FF)],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ShoppingScreen()),
+              );
+            },
+          ),
+          SizedBox(height: 16),
+          _buildWideCategoryCard(
+            title: 'РЕЦЕПТЫ',
+            icon: Icons.menu_book,
+            gradientColors: [Color(0xFF8E54E9), Color(0xFF4776E6)],
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => RecipeScreen()),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryCard({
+  Widget _buildWideCategoryCard({
     required String title,
     required IconData icon,
     required List<Color> gradientColors,
     required VoidCallback onTap,
   }) {
-    // Преобразуем текст к одному стилю - первая буква заглавная, остальные строчные
-    String formattedTitle = title.substring(0, 1) + title.substring(1).toLowerCase();
-    
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _pulseAnimation.value,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              height: 210,
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 70,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: gradientColors,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: gradientColors[0].withOpacity(0.18),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(width: 20),
+            Container(
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: gradientColors,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: gradientColors[0].withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: Offset(0, 8),
-                  ),
-                ],
+                color: Colors.white.withOpacity(0.18),
+                shape: BoxShape.circle,
               ),
-              child: Stack(
-                children: [
-                  // Декоративные круги
-                  Positioned(
-                    top: -20,
-                    right: -20,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: -30,
-                    left: -30,
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  
-                  // Содержимое карточки с фиксированным расположением
-                  Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Верхний отступ
-                        SizedBox(height: 10),
-                        
-                        // Иконка в круге
-                        Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            icon,
-                            size: 36,
-                            color: Colors.white,
-                          ),
-                        ),
-                        
-                        // Заголовок (ограничен по высоте)
-                        Container(
-                          height: 50, // Фиксированная высота для текста
-                          alignment: Alignment.center,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              formattedTitle,
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              style: GoogleFonts.poppins(
-                                fontSize: 16, 
-                                fontWeight: FontWeight.w500,
-                                letterSpacing: 0.5,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                        
-                        // Кнопка "Открыть"
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Открыть',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        
-                        // Нижний отступ
-                        SizedBox(height: 5),
-                      ],
-                    ),
-                  ),
-                ],
+              child: Icon(icon, color: Colors.white, size: 28),
+            ),
+            SizedBox(width: 20),
+            Expanded(
+              child: Text(
+                title.substring(0, 1) + title.substring(1).toLowerCase(),
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 0.5,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                softWrap: true,
               ),
             ),
-          ),
-        );
-      }
+            SizedBox(width: 16),
+            SizedBox(
+              width: 90,
+              child: Container(
+                margin: EdgeInsets.only(right: 20),
+                padding: EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.22),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  'Открыть',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
   

@@ -434,6 +434,22 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
                     textAlign: TextAlign.center,
                   ),
                 ),
+                // Количество продукта (если не пусто)
+                if (product.quantity.trim().isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    child: Text(
+                      product.quantity,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 
                 // Расширяющийся пустой блок
                 Expanded(child: SizedBox()),
