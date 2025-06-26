@@ -42,7 +42,7 @@ class ThemeProvider extends ChangeNotifier {
       elevation: 0,
       iconTheme: IconThemeData(color: Color(0xFF2A9D8F)),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white,
       shadowColor: Colors.black.withOpacity(0.1),
     ),
@@ -67,7 +67,7 @@ class ThemeProvider extends ChangeNotifier {
       elevation: 0,
       iconTheme: IconThemeData(color: Color(0xFF2A9D8F)),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Color(0xFF2D3748),
       shadowColor: Colors.black.withOpacity(0.3),
     ),

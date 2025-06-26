@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'shopping_item.dart';
@@ -6,15 +7,11 @@ part of 'shopping_item.dart';
 // RealmObjectGenerator
 // **************************************************************************
 
+// coverage:ignore-file
 // ignore_for_file: type=lint
 class ShoppingItem extends _ShoppingItem
     with RealmEntity, RealmObjectBase, RealmObject {
-  ShoppingItem(
-    String id,
-    String name,
-    String quantity,
-    bool isBought,
-  ) {
+  ShoppingItem(String id, String name, String quantity, bool isBought) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'name', name);
     RealmObjectBase.set(this, 'quantity', quantity);
@@ -49,9 +46,9 @@ class ShoppingItem extends _ShoppingItem
       RealmObjectBase.getChanges<ShoppingItem>(this);
 
   @override
-  Stream<RealmObjectChanges<ShoppingItem>> changesFor(
-          [List<String>? keyPaths]) =>
-      RealmObjectBase.getChangesFor<ShoppingItem>(this, keyPaths);
+  Stream<RealmObjectChanges<ShoppingItem>> changesFor([
+    List<String>? keyPaths,
+  ]) => RealmObjectBase.getChangesFor<ShoppingItem>(this, keyPaths);
 
   @override
   ShoppingItem freeze() => RealmObjectBase.freezeObject<ShoppingItem>(this);
@@ -89,12 +86,16 @@ class ShoppingItem extends _ShoppingItem
     RealmObjectBase.registerFactory(ShoppingItem._);
     register(_toEJson, _fromEJson);
     return const SchemaObject(
-        ObjectType.realmObject, ShoppingItem, 'ShoppingItem', [
-      SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
-      SchemaProperty('name', RealmPropertyType.string),
-      SchemaProperty('quantity', RealmPropertyType.string),
-      SchemaProperty('isBought', RealmPropertyType.bool),
-    ]);
+      ObjectType.realmObject,
+      ShoppingItem,
+      'ShoppingItem',
+      [
+        SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
+        SchemaProperty('name', RealmPropertyType.string),
+        SchemaProperty('quantity', RealmPropertyType.string),
+        SchemaProperty('isBought', RealmPropertyType.bool),
+      ],
+    );
   }();
 
   @override

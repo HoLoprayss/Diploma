@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'recipe.dart';
@@ -6,6 +7,7 @@ part of 'recipe.dart';
 // RealmObjectGenerator
 // **************************************************************************
 
+// coverage:ignore-file
 // ignore_for_file: type=lint
 class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
   Recipe(
@@ -15,15 +17,23 @@ class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
     DateTime createdAt, {
     Iterable<String> ingredients = const [],
     Iterable<String> steps = const [],
+    String? imagePath,
   }) {
     RealmObjectBase.set(this, 'id', id);
     RealmObjectBase.set(this, 'title', title);
     RealmObjectBase.set(this, 'description', description);
     RealmObjectBase.set<RealmList<String>>(
-        this, 'ingredients', RealmList<String>(ingredients));
+      this,
+      'ingredients',
+      RealmList<String>(ingredients),
+    );
     RealmObjectBase.set<RealmList<String>>(
-        this, 'steps', RealmList<String>(steps));
+      this,
+      'steps',
+      RealmList<String>(steps),
+    );
     RealmObjectBase.set(this, 'createdAt', createdAt);
+    RealmObjectBase.set(this, 'imagePath', imagePath);
   }
 
   Recipe._();
@@ -67,6 +77,12 @@ class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
       RealmObjectBase.set(this, 'createdAt', value);
 
   @override
+  String? get imagePath =>
+      RealmObjectBase.get<String>(this, 'imagePath') as String?;
+  @override
+  set imagePath(String? value) => RealmObjectBase.set(this, 'imagePath', value);
+
+  @override
   Stream<RealmObjectChanges<Recipe>> get changes =>
       RealmObjectBase.getChanges<Recipe>(this);
 
@@ -85,6 +101,7 @@ class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
       'ingredients': ingredients.toEJson(),
       'steps': steps.toEJson(),
       'createdAt': createdAt.toEJson(),
+      'imagePath': imagePath.toEJson(),
     };
   }
 
@@ -105,6 +122,7 @@ class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
           fromEJson(createdAt),
           ingredients: fromEJson(ejson['ingredients']),
           steps: fromEJson(ejson['steps']),
+          imagePath: fromEJson(ejson['imagePath']),
         ),
       _ => raiseInvalidEJson(ejson),
     };
@@ -117,11 +135,18 @@ class Recipe extends _Recipe with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
       SchemaProperty('title', RealmPropertyType.string),
       SchemaProperty('description', RealmPropertyType.string),
-      SchemaProperty('ingredients', RealmPropertyType.string,
-          collectionType: RealmCollectionType.list),
-      SchemaProperty('steps', RealmPropertyType.string,
-          collectionType: RealmCollectionType.list),
+      SchemaProperty(
+        'ingredients',
+        RealmPropertyType.string,
+        collectionType: RealmCollectionType.list,
+      ),
+      SchemaProperty(
+        'steps',
+        RealmPropertyType.string,
+        collectionType: RealmCollectionType.list,
+      ),
       SchemaProperty('createdAt', RealmPropertyType.timestamp),
+      SchemaProperty('imagePath', RealmPropertyType.string, optional: true),
     ]);
   }();
 

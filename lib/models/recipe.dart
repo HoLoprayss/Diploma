@@ -11,4 +11,5 @@ abstract class _Recipe {
   late List<String> ingredients;
   late List<String> steps;
   late DateTime createdAt;
+  late String? imagePath;
 } 

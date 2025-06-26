@@ -16,9 +16,9 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product()
   ..category = json['category'] as String;
 
 Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'quantity': instance.quantity,
-      'expirationDate': instance.expirationDate?.toIso8601String(),
-      'category': instance.category,
-    };
+  'id': instance.id,
+  'name': instance.name,
+  'quantity': instance.quantity,
+  'expirationDate': instance.expirationDate?.toIso8601String(),
+  'category': instance.category,
+};

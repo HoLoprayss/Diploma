@@ -7,7 +7,13 @@ class RealmService {
   late Realm realm;
 
   RealmService() {
-    config = Configuration.local([Product.schema]);
+    config = Configuration.local(
+      [Product.schema],
+      schemaVersion: 2,
+      migrationCallback: (migration, oldSchemaVersion) {
+        // Пустая миграция для согласованности схемы
+      },
+    );
     realm = Realm(config);
   }
 

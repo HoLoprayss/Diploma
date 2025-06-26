@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'product.dart';
@@ -6,6 +7,7 @@ part of 'product.dart';
 // RealmObjectGenerator
 // **************************************************************************
 
+// coverage:ignore-file
 // ignore_for_file: type=lint
 class Product extends _Product with RealmEntity, RealmObjectBase, RealmObject {
   Product(
@@ -102,8 +104,11 @@ class Product extends _Product with RealmEntity, RealmObjectBase, RealmObject {
       SchemaProperty('id', RealmPropertyType.string, primaryKey: true),
       SchemaProperty('name', RealmPropertyType.string),
       SchemaProperty('quantity', RealmPropertyType.string),
-      SchemaProperty('expirationDate', RealmPropertyType.timestamp,
-          optional: true),
+      SchemaProperty(
+        'expirationDate',
+        RealmPropertyType.timestamp,
+        optional: true,
+      ),
       SchemaProperty('category', RealmPropertyType.string),
     ]);
   }();

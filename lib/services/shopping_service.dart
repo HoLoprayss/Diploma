@@ -7,7 +7,13 @@ class ShoppingService {
   late Realm realm;
 
   ShoppingService() {
-    config = Configuration.local([ShoppingItem.schema]);
+    config = Configuration.local(
+      [ShoppingItem.schema],
+      schemaVersion: 2,
+      migrationCallback: (migration, oldSchemaVersion) {
+        // Пустая миграция для согласованности схемы
+      },
+    );
     realm = Realm(config);
   }
 
