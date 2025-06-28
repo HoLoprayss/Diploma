@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/realm_service.dart';
 import 'models/product.dart';
+import 'models/product_filter.dart';
+import 'services/filter_service.dart';
 import 'edit_product_screen.dart';
+import 'filter_screen.dart';
 
 // Adjust these imports based on your actual file names and directory structure
 import 'add_product_screen.dart'; // Alternative: 'AddProductScreen.dart' or 'screens/add_product_screen.dart'
@@ -15,17 +18,21 @@ class FridgeScreen extends StatefulWidget {
 
 class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderStateMixin {
   late RealmService realmService;
-  late List<Product> fridgeProducts;
+  late List<Product> allFridgeProducts;
+  late List<Product> filteredProducts;
   bool isEditMode = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _slideAnimation;
   bool _isLoading = true;
+  ProductFilter? _currentFilter;
 
   @override
   void initState() {
     super.initState();
     realmService = RealmService();
+    allFridgeProducts = [];
+    filteredProducts = [];
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 800),
@@ -37,6 +44,7 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _loadProducts();
+    _loadSavedFilter();
     _animationController.forward();
   }
 
@@ -45,6 +53,67 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
     realmService.close();
     _animationController.dispose();
     super.dispose();
+  }
+
+  /// Загружает сохраненный фильтр
+  Future<void> _loadSavedFilter() async {
+    try {
+      final savedFilter = await FilterService.loadFilter();
+      if (savedFilter != null) {
+        setState(() {
+          _currentFilter = savedFilter;
+        });
+        _applyCurrentFilter();
+      }
+    } catch (e) {
+      print('Error loading saved filter: $e');
+    }
+  }
+
+  /// Применяет текущий фильтр к продуктам
+  void _applyCurrentFilter() {
+    if (_currentFilter != null) {
+      setState(() {
+        filteredProducts = FilterService.applyFilter(allFridgeProducts, _currentFilter!);
+      });
+    } else {
+      setState(() {
+        filteredProducts = List.from(allFridgeProducts);
+      });
+    }
+  }
+
+  /// Обработчик применения фильтра
+  void _onFilterApplied(ProductFilter filter) {
+    setState(() {
+      _currentFilter = filter;
+    });
+    _applyCurrentFilter();
+    
+    // Сохраняем фильтр
+    FilterService.saveFilter(filter);
+  }
+
+  /// Показывает экран фильтрации
+  void _showFilterScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FilterScreen(
+          initialFilter: _currentFilter,
+          onFilterApplied: _onFilterApplied,
+        ),
+      ),
+    );
+  }
+
+  /// Очищает текущий фильтр
+  void _clearFilter() {
+    setState(() {
+      _currentFilter = null;
+      filteredProducts = List.from(allFridgeProducts);
+    });
+    FilterService.saveFilter(ProductFilter());
   }
 
   String calculateDaysLeft(DateTime? expirationDate) {
@@ -277,7 +346,8 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
     // Небольшая задержка для плавности анимации
     Future.delayed(Duration(milliseconds: 300), () {
       setState(() {
-        fridgeProducts = realmService.getProductsByCategory('Fridge').toList();
+        allFridgeProducts = realmService.getProductsByCategory('Fridge').toList();
+        _applyCurrentFilter();
         _isLoading = false;
       });
     });
@@ -306,6 +376,34 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          // Кнопка фильтрации
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _currentFilter?.isActive == true 
+                      ? Icons.filter_alt 
+                      : Icons.filter_alt_outlined,
+                  color: Colors.white,
+                ),
+                tooltip: 'Фильтры',
+                onPressed: _showFilterScreen,
+              ),
+              if (_currentFilter?.isActive == true)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           // Кнопка переключения режима редактирования
           IconButton(
             icon: Icon(
@@ -337,31 +435,74 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A9D8F)),
               ),
             )
-          : fridgeProducts.isEmpty
+          : filteredProducts.isEmpty
               ? _buildEmptyState()
               : SafeArea(
                   bottom: true,
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ScaleTransition(
-                      scale: _slideAnimation,
-                      child: Padding(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
-                        child: GridView.builder(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.9, // Увеличиваем соотношение для нового дизайна
+                  child: Column(
+                    children: [
+                      // Индикатор активного фильтра
+                      if (_currentFilter?.isActive == true)
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          color: Color(0xFF2A9D8F).withOpacity(0.1),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.filter_alt,
+                                size: 16,
+                                color: Color(0xFF2A9D8F),
+                              ),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Применен фильтр: ${_getFilterDescription(_currentFilter!)}',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: Color(0xFF2A9D8F),
+                                  ),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: _clearFilter,
+                                child: Text(
+                                  'Очистить',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: Color(0xFF2A9D8F),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          itemCount: fridgeProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = fridgeProducts[index];
-                            return _buildProductCard(product);
-                          },
+                        ),
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: ScaleTransition(
+                            scale: _slideAnimation,
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(16, 16, 16, 16),
+                              child: GridView.builder(
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 16,
+                                  childAspectRatio: 0.9,
+                                ),
+                                itemCount: filteredProducts.length,
+                                itemBuilder: (context, index) {
+                                  final product = filteredProducts[index];
+                                  return _buildProductCard(product);
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
     );
@@ -579,5 +720,24 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
         ),
       ),
     );
+  }
+
+  /// Получает краткое описание фильтра для отображения
+  String _getFilterDescription(ProductFilter filter) {
+    final parts = <String>[];
+    
+    if (filter.nameFilter != null && filter.nameFilter!.isNotEmpty) {
+      parts.add('"${filter.nameFilter}"');
+    }
+    
+    if (filter.expirationFilter != null) {
+      parts.add(FilterService.getExpirationFilterDisplayName(filter.expirationFilter!.type));
+    }
+    
+    if (filter.quantityFilter != null) {
+      parts.add('${FilterService.getQuantityComparisonDisplayName(filter.quantityFilter!.comparisonType)} ${filter.quantityFilter!.value} ${filter.quantityFilter!.unit}');
+    }
+    
+    return parts.join(', ');
   }
 }
