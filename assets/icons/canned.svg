@@ -1,0 +1,17 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Основная банка -->
+  <rect x="7" y="6" width="10" height="12" rx="1" fill="none" stroke="#666666" stroke-width="2"/>
+  
+  <!-- Верхняя крышка -->
+  <ellipse cx="12" cy="6" rx="5" ry="1.5" fill="none" stroke="#666666" stroke-width="1.5"/>
+  
+  <!-- Нижняя часть -->
+  <ellipse cx="12" cy="18" rx="5" ry="1.5" fill="none" stroke="#666666" stroke-width="1.5"/>
+  
+  <!-- Этикетка -->
+  <rect x="9" y="10" width="6" height="4" rx="0.5" fill="none" stroke="#999999" stroke-width="1"/>
+  
+  <!-- Линии на этикетке -->
+  <line x1="10" y1="11.5" x2="14" y2="11.5" stroke="#999999" stroke-width="0.5"/>
+  <line x1="10" y1="12.5" x2="13" y2="12.5" stroke="#999999" stroke-width="0.5"/>
+</svg>

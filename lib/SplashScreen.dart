@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -80,12 +81,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     // Анимация пульсации
     _pulseAnimation = Tween<double>(
-      begin: 0.98,
-      end: 1.02,
+      begin: 0.95,
+      end: 1.05,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
+        curve: const Interval(0.6, 1.0, curve: Curves.easeInOutSine),
       ),
     )..addListener(() {
       setState(() {});  // Обновляем состояние для пульсации
@@ -93,12 +94,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     // Анимация свечения
     _glowAnimation = Tween<double>(
-      begin: 2.0,
-      end: 6.0,
+      begin: 3.0,
+      end: 8.0,
     ).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeInOut),
+        curve: const Interval(0.6, 1.0, curve: Curves.easeInOutSine),
       ),
     );
     
@@ -109,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         // Зацикливаем только пульсацию после завершения основной анимации
         _animationController.repeat(
           reverse: true, 
-          period: Duration(milliseconds: 1500),
+          period: Duration(milliseconds: 2000),
           min: 0.7, 
           max: 1.0
         );
@@ -197,144 +198,43 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
   }
   
-  // Создаем логотип приложения (бирюзовый квадрат с вилкой и ножом)
+  // Создаем логотип приложения (SVG с буквой Y)
   Widget _buildLogoIcon() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        // Фон логотипа
-        AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Container(
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0xFF2A9D8F).withOpacity(0.4 * _pulseAnimation.value),
+                blurRadius: _glowAnimation.value * _pulseAnimation.value,
+                spreadRadius: _glowAnimation.value / 4 * _pulseAnimation.value,
+                offset: Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Color(0xFF2A9D8F).withOpacity(0.2 * _pulseAnimation.value),
+                blurRadius: _glowAnimation.value * 2 * _pulseAnimation.value,
+                spreadRadius: _glowAnimation.value / 2 * _pulseAnimation.value,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SvgPicture.asset(
+              'assets/icons/app_logo.svg',
               width: 76,
               height: 76,
-              decoration: BoxDecoration(
-                color: Color(0xFF2A9D8F),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFF2A9D8F).withOpacity(0.3 * _pulseAnimation.value),
-                    blurRadius: _glowAnimation.value * _pulseAnimation.value,
-                    spreadRadius: _glowAnimation.value / 3 * _pulseAnimation.value,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        
-        // Вилка
-        Positioned(
-          left: 25,
-          top: 15,
-          child: Container(
-            width: 3,
-            height: 45,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(1),
+              fit: BoxFit.contain,
             ),
           ),
-        ),
-        
-        // Зубцы вилки
-        Positioned(
-          left: 18,
-          top: 15,
-          child: Container(
-            width: 3,
-            height: 25,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-        ),
-        
-        Positioned(
-          left: 32,
-          top: 15,
-          child: Container(
-            width: 3,
-            height: 25,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-        ),
-        
-        // Нож
-        Positioned(
-          left: 50,
-          top: 15,
-          child: Transform.rotate(
-            angle: 0.1,
-            child: Container(
-              width: 4,
-              height: 45,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ),
-        ),
-        
-        // Лезвие ножа
-        Positioned(
-          left: 48,
-          top: 15,
-          child: Transform.rotate(
-            angle: 0.1,
-            child: ClipPath(
-              clipper: TriangleClipper(),
-              child: Container(
-                width: 15,
-                height: 30,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ),
-        
-        // Эффект свечения при пульсации
-        AnimatedBuilder(
-          animation: _pulseAnimation,
-          builder: (context, child) {
-            return Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity((_pulseAnimation.value - 0.98) * 0.5),
-                  width: 1.5,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
-}
-
-// Кастомный клипер для создания треугольника (лезвие ножа)
-class TriangleClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(size.width / 2, 0);
-    path.lineTo(size.width, size.height);
-    path.lineTo(0, size.height);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 

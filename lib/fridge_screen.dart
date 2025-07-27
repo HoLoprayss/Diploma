@@ -6,6 +6,8 @@ import 'models/product_filter.dart';
 import 'services/filter_service.dart';
 import 'edit_product_screen.dart';
 import 'filter_screen.dart';
+import 'widgets/app_icon.dart';
+import 'constants/app_icons.dart';
 
 // Adjust these imports based on your actual file names and directory structure
 import 'add_product_screen.dart'; // Alternative: 'AddProductScreen.dart' or 'screens/add_product_screen.dart'
@@ -552,10 +554,11 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
                     color: expirationColor.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.kitchen,
+                  child: AppIcon.forProduct(
+                    product.name,
+                    width: 26,
+                    height: 26,
                     color: expirationColor,
-                    size: 26,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -665,9 +668,10 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
                 color: Color(0xFF2A9D8F).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.kitchen_outlined,
-                size: 60,
+              child: AppIcon(
+                AppIcons.fridge,
+                width: 60,
+                height: 60,
                 color: Color(0xFF2A9D8F),
               ),
             ),

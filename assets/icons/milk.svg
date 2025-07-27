@@ -1,0 +1,11 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Простая бутылка молока -->
+  <!-- Горлышко -->
+  <rect x="10.5" y="3" width="3" height="2" stroke="#666666" stroke-width="1" fill="none"/>
+  
+  <!-- Основная часть бутылки -->
+  <rect x="8" y="5" width="8" height="15" rx="1" stroke="#666666" stroke-width="1" fill="none"/>
+  
+  <!-- Молоко внутри -->
+  <rect x="8.5" y="7" width="7" height="12.5" rx="0.5" fill="white" stroke="#e0e0e0" stroke-width="0.5"/>
+</svg>

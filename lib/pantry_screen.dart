@@ -8,6 +8,8 @@ import 'edit_product_screen.dart';
 import 'filter_screen.dart';
 import 'add_product_screen.dart';
 import 'scan_screen.dart';
+import 'widgets/app_icon.dart';
+import 'constants/app_icons.dart';
 
 class PantryScreen extends StatefulWidget {
   @override
@@ -550,10 +552,11 @@ class _PantryScreenState extends State<PantryScreen> with SingleTickerProviderSt
                     color: expirationColor.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    Icons.storage,
+                  child: AppIcon.forProduct(
+                    product.name,
+                    width: 26,
+                    height: 26,
                     color: expirationColor,
-                    size: 26,
                   ),
                 ),
                 SizedBox(height: 12),
@@ -663,9 +666,10 @@ class _PantryScreenState extends State<PantryScreen> with SingleTickerProviderSt
                 color: Color(0xFFF4A261).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.storage_outlined,
-                size: 60,
+              child: AppIcon(
+                AppIcons.pantry,
+                width: 60,
+                height: 60,
                 color: Color(0xFFF4A261),
               ),
             ),

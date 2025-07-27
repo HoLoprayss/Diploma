@@ -14,6 +14,9 @@ import 'theme/theme_provider.dart';
 import 'settings_screen.dart';
 import 'shopping_screen.dart';
 import 'recipe_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'widgets/app_icon.dart';
+import 'constants/app_icons.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -38,6 +41,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   int _fridgeCount = 0;
   int _pantryCount = 0;
   int _expiredCount = 0;
+  int _totalCount = 0;
+  int _expiringSoonCount = 0;
+  Map<String, int> _categoryCounts = {};
+  String _topCategory = '';
   
   @override
   void initState() {
@@ -151,29 +158,69 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     // Получаем все продукты
     final fridgeProducts = realmService.getProductsByCategory('Fridge');
     final pantryProducts = realmService.getProductsByCategory('Pantry');
+    final allProducts = realmService.getAllProducts();
     
     setState(() {
       _fridgeCount = fridgeProducts.length;
       _pantryCount = pantryProducts.length;
+      _totalCount = allProducts.length;
       
-      // Подсчет просроченных продуктов
+      // Подсчет просроченных продуктов и истекающих скоро
       DateTime now = DateTime.now();
+      DateTime soonDate = now.add(Duration(days: 3)); // Истекают в ближайшие 3 дня
       _expiredCount = 0;
+      _expiringSoonCount = 0;
+      _categoryCounts.clear();
       
-      // Проверяем просроченные в холодильнике
-      for (var product in fridgeProducts) {
+      // Анализируем все продукты
+      for (var product in allProducts) {
+        // Подсчет просроченных
         if (product.expirationDate != null && product.expirationDate!.isBefore(now)) {
           _expiredCount++;
         }
+        // Подсчет истекающих скоро (но не просроченных)
+        else if (product.expirationDate != null && 
+                 product.expirationDate!.isAfter(now) && 
+                 product.expirationDate!.isBefore(soonDate)) {
+          _expiringSoonCount++;
+        }
+        
+        // Подсчет по категориям продуктов (определяем по названию)
+        String categoryIcon = AppIcons.getIconByCategory(product.name.toLowerCase());
+        String categoryName = _getCategoryNameByIcon(categoryIcon);
+        _categoryCounts[categoryName] = (_categoryCounts[categoryName] ?? 0) + 1;
       }
       
-      // Проверяем просроченные в кладовой
-      for (var product in pantryProducts) {
-        if (product.expirationDate != null && product.expirationDate!.isBefore(now)) {
-          _expiredCount++;
+      // Находим самую популярную категорию
+      _topCategory = '';
+      int maxCount = 0;
+      _categoryCounts.forEach((category, count) {
+        if (count > maxCount) {
+          maxCount = count;
+          _topCategory = category;
         }
-      }
+      });
     });
+  }
+  
+  // Метод для получения названия категории по иконке
+  String _getCategoryNameByIcon(String iconPath) {
+    if (iconPath.contains('dairy')) return 'Молочные';
+    if (iconPath.contains('meat')) return 'Мясо';
+    if (iconPath.contains('vegetables')) return 'Овощи';
+    if (iconPath.contains('fruits')) return 'Фрукты';
+    if (iconPath.contains('bread')) return 'Хлеб';
+    if (iconPath.contains('beverages')) return 'Напитки';
+    if (iconPath.contains('snacks')) return 'Снеки';
+    if (iconPath.contains('canned')) return 'Консервы';
+    if (iconPath.contains('frozen')) return 'Заморозка';
+    if (iconPath.contains('grains')) return 'Крупы';
+    if (iconPath.contains('fish')) return 'Рыба';
+    if (iconPath.contains('eggs')) return 'Яйца';
+    if (iconPath.contains('nuts')) return 'Орехи';
+    if (iconPath.contains('baby_food')) return 'Дет. питание';
+    if (iconPath.contains('household')) return 'Бытовая химия';
+    return 'Прочее';
   }
   
   // Метод для навигации к экрану холодильника с обновлением статистики при возврате
@@ -265,34 +312,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       elevation: 0,
       title: FadeTransition(
         opacity: _fadeAnimation,
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Color(0xFF2A9D8F),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0xFF2A9D8F).withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  )
-                ]
-              ),
-              child: Icon(Icons.restaurant, color: Colors.white, size: 22),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'MEALSAFE',
-              style: GoogleFonts.poppins(
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2A9D8F),
-                letterSpacing: 1.2,
-              ),
-            ),
-          ],
+        child: Text(
+          'MEALSAFE',
+          style: GoogleFonts.poppins(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF2A9D8F),
+            letterSpacing: 1.2,
+          ),
         ),
       ),
       actions: [
@@ -544,7 +571,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ),
           SizedBox(height: 16),
           
-          // Статистические карточки
+          // Основные статистические карточки
           Container(
             decoration: BoxDecoration(
               color: isDark ? Color(0xFF2D3748) : Colors.white,
@@ -561,40 +588,121 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               padding: EdgeInsets.all(20),
               child: Column(
                 children: [
+                  // Первый ряд - Холодильник и Кладовая
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _buildStatItem(
-                        title: 'Холодильник',
-                        count: _fridgeCount,
-                        icon: Icons.kitchen,
-                        color: Color(0xFF2A9D8F),
+                      Expanded(
+                        child: _buildStatItemWithSvg(
+                          title: 'Холодильник',
+                          count: _fridgeCount,
+                          iconPath: AppIcons.fridge,
+                          color: Color(0xFF2A9D8F),
+                        ),
                       ),
-                      _buildStatItem(
-                        title: 'Кладовая',
-                        count: _pantryCount,
-                        icon: Icons.storage,
-                        color: Color(0xFFF4A261),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatItemWithSvg(
+                          title: 'Кладовая',
+                          count: _pantryCount,
+                          iconPath: AppIcons.pantry,
+                          color: Color(0xFFF4A261),
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 24),
-                  Container(
-                    height: 1,
-                    color: isDark ? Colors.grey[700] : Colors.grey[200],
+                  SizedBox(height: 20),
+                  
+                  // Второй ряд - Всего продуктов и Истекает скоро
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          title: 'Всего продуктов',
+                          count: _totalCount,
+                          icon: Icons.inventory_2_outlined,
+                          color: Color(0xFF4F8FFF),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: _buildStatItem(
+                          title: 'Истекает скоро',
+                          count: _expiringSoonCount,
+                          icon: Icons.schedule,
+                          color: Color(0xFFFF9800),
+                          isWarning: true,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 24),
-                  _buildStatItem(
-                    title: 'Просрочено',
-                    count: _expiredCount,
-                    icon: Icons.warning_amber_rounded,
-                    color: Color(0xFFE76F51),
-                    isWarning: true,
+                  SizedBox(height: 20),
+                  
+                  // Третий ряд - Просрочено (по центру)
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Container(), // Пустой контейнер для центрирования
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: _buildStatItem(
+                          title: 'Просрочено',
+                          count: _expiredCount,
+                          icon: Icons.warning_amber_rounded,
+                          color: Color(0xFFE76F51),
+                          isWarning: true,
+                        ),
+                      ),
+                      Expanded(
+                        flex: 1,
+                        child: Container(), // Пустой контейнер для центрирования
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
+          
+          SizedBox(height: 20),
+          
+          // Карточка с популярной категорией и топ категориями
+          if (_topCategory.isNotEmpty) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? Color(0xFF2D3748) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Популярные категории',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.textTheme.titleMedium?.color,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    _buildTopCategoryItem(),
+                    SizedBox(height: 12),
+                    _buildCategoryList(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -608,39 +716,261 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     bool isWarning = false,
   }) {
     final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? Color(0xFF374151) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 28,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            '$count',
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: isWarning ? color : theme.textTheme.titleLarge?.color,
+              height: 1.0,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+              height: 1.2,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItemWithSvg({
+    required String title,
+    required int count,
+    required String iconPath,
+    required Color color,
+    bool isWarning = false,
+  }) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+    
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark ? Color(0xFF374151) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: AppIcon(
+               iconPath,
+               width: 28,
+               height: 28,
+               color: color,
+             ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            '$count',
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.w700,
+              color: isWarning ? color : theme.textTheme.titleLarge?.color,
+              height: 1.0,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+              height: 1.2,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildTopCategoryItem() {
+    final theme = Theme.of(context);
+    final topCount = _categoryCounts[_topCategory] ?? 0;
+    
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0xFF8E54E9).withOpacity(0.1), Color(0xFF4776E6).withOpacity(0.1)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Color(0xFF8E54E9).withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Color(0xFF8E54E9).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.trending_up,
+              color: Color(0xFF8E54E9),
+              size: 20,
+            ),
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Топ категория: $_topCategory',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: theme.textTheme.titleMedium?.color,
+                  ),
+                ),
+                Text(
+                  '$topCount продуктов',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '$topCount',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF8E54E9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildCategoryList() {
+    final theme = Theme.of(context);
+    
+    // Сортируем категории по количеству (исключая топ категорию)
+    final sortedCategories = _categoryCounts.entries
+        .where((entry) => entry.key != _topCategory && entry.value > 0)
+        .toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    // Показываем только топ 3 категории (исключая главную)
+    final topCategories = sortedCategories.take(3).toList();
+    
+    if (topCategories.isEmpty) {
+      return SizedBox.shrink();
+    }
     
     return Column(
-      children: [
-        Container(
-          padding: EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+      children: topCategories.map((entry) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Color(0xFF4F8FFF).withOpacity(0.6),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  entry.key,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  ),
+                ),
+              ),
+              Text(
+                '${entry.value}',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF4F8FFF),
+                ),
+              ),
+            ],
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          '$count',
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: isWarning ? color : theme.textTheme.titleLarge?.color,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
-          ),
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
   
