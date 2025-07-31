@@ -17,6 +17,8 @@ import 'recipe_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'widgets/app_icon.dart';
 import 'constants/app_icons.dart';
+import 'notifications_history_screen.dart';
+import 'services/notification_service.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -184,6 +186,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                  product.expirationDate!.isBefore(soonDate)) {
           _expiringSoonCount++;
         }
+
+        realmService.updateExpiryNotifications();
         
         // Подсчет по категориям продуктов (определяем по названию)
         String categoryIcon = AppIcons.getIconByCategory(product.name.toLowerCase());
@@ -262,6 +266,38 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       _updateProductCounts();
     });
   }
+
+  void _testNotification() {
+    print('=== ЗАПУСК ТЕСТОВОГО УВЕДОМЛЕНИЯ ===');
+
+    final notificationService = NotificationService();
+
+    // Планируем уведомление через 5 секунд
+    final testTime = DateTime.now().add(Duration(seconds: 5));
+
+    print('Время уведомления: $testTime');
+
+    notificationService.scheduleExpiryNotification(
+      id: 'test_notification',
+      title: 'Тестовое уведомление',
+      body: 'Это тестовое напоминание от MEALSAFE. Работает!',
+      scheduledTime: testTime,
+    ).then((_) {
+      print('Уведомление успешно запланировано');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Тестовое уведомление запланировано на 5 секунд'),
+            duration: Duration(seconds: 2),
+          )
+      );
+    }).catchError((error) {
+      print('Ошибка при планировании уведомления: $error');
+    });
+
+    print('Метод scheduleExpiryNotification вызван');
+  }
+
+
   
   @override
   Widget build(BuildContext context) {
@@ -326,7 +362,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         IconButton(
           icon: Icon(Icons.notifications_outlined, color: Color(0xFF2A9D8F)),
           onPressed: () {
-            // Логика для уведомлений
+            // Открываем экран с историей уведомлений
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => NotificationsHistoryScreen()),
+            );
           },
         ),
         IconButton(
@@ -1052,6 +1092,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               onTap: () {
                                 _toggleFab();
                                 _navigateToAdd();
+                              },
+                            ),
+                            _buildFabOption(
+                              icon: Icons.notifications_active,
+                              label: 'Тест уведомления',
+                              color: Color(0xFFE76F51),
+                              onTap: () {
+                                _toggleFab();
+                                _testNotification();
                               },
                             ),
                           ],

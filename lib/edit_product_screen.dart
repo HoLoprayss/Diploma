@@ -84,7 +84,9 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
         expirationDate: _expirationDate,
         category: dbCategory,
       );
-      
+
+      realmService.updateExpiryNotifications();
+
       realmService.close();
       
       // Небольшая анимация перед закрытием

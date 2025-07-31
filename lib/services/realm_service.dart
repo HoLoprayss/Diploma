@@ -1,6 +1,7 @@
 import 'package:realm/realm.dart';
 import '../models/product.dart';
 import 'package:uuid/uuid.dart' as uuid_lib;
+import 'notification_service.dart';
 
 class RealmService {
   late Configuration config;
@@ -60,6 +61,29 @@ class RealmService {
     realm.write(() {
       realm.delete(product);
     });
+  }
+
+  void updateExpiryNotifications() {
+    final allProducts = getAllProducts();
+    final notificationService = NotificationService();
+
+    // Сначала отменим все существующие уведомления
+    notificationService.cancelAllNotifications();
+
+    // Затем запланируем новые
+    for (var product in allProducts) {
+      if (product.expirationDate != null) {
+        final threeDaysBeforeExpiry = product.expirationDate!.subtract(const Duration(days: 3));
+        if (threeDaysBeforeExpiry.isAfter(DateTime.now())) {
+          notificationService.scheduleExpiryNotification(
+            id: product.id,
+            title: 'Срок годности',
+            body: 'Продукт "${product.name}" испортится через 3 дня!',
+            scheduledTime: threeDaysBeforeExpiry,
+          );
+        }
+      }
+    }
   }
 
   // Закрытие базы данных
