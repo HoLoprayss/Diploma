@@ -73,8 +73,8 @@ class _AddProductScreenState extends State<AddProductScreen> with SingleTickerPr
         category: dbCategory,
       );
 
-      // обновления уведомлений
-      realmService.updateExpiryNotifications();
+      // // обновления уведомлений
+      // realmService.updateExpiryNotifications();
 
       realmService.close();
       

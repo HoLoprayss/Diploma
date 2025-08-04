@@ -130,7 +130,7 @@ class _PantryScreenState extends State<PantryScreen> with SingleTickerProviderSt
       });
     });
 
-    realmService.updateExpiryNotifications();
+    // realmService.updateExpiryNotifications();
   }
 
   String calculateDaysLeft(DateTime? expirationDate) {
@@ -348,7 +348,7 @@ class _PantryScreenState extends State<PantryScreen> with SingleTickerProviderSt
                 Navigator.pop(context);
                 _loadProducts();
 
-                realmService.updateExpiryNotifications();
+                // realmService.updateExpiryNotifications();
               },
             ),
           ],

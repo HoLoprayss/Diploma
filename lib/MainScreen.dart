@@ -187,7 +187,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           _expiringSoonCount++;
         }
 
-        realmService.updateExpiryNotifications();
+        // realmService.updateExpiryNotifications();
         
         // Подсчет по категориям продуктов (определяем по названию)
         String categoryIcon = AppIcons.getIconByCategory(product.name.toLowerCase());
@@ -267,35 +267,35 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     });
   }
 
-  void _testNotification() {
-    print('=== ЗАПУСК ТЕСТОВОГО УВЕДОМЛЕНИЯ ===');
-
-    final notificationService = NotificationService();
-
-    // Планируем уведомление через 5 секунд
-    final testTime = DateTime.now().add(Duration(seconds: 5));
-
-    print('Время уведомления: $testTime');
-
-    notificationService.scheduleExpiryNotification(
-      id: 'test_notification',
-      title: 'Тестовое уведомление',
-      body: 'Это тестовое напоминание от MEALSAFE. Работает!',
-      scheduledTime: testTime,
-    ).then((_) {
-      print('Уведомление успешно запланировано');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Тестовое уведомление запланировано на 5 секунд'),
-            duration: Duration(seconds: 2),
-          )
-      );
-    }).catchError((error) {
-      print('Ошибка при планировании уведомления: $error');
-    });
-
-    print('Метод scheduleExpiryNotification вызван');
-  }
+  // void _testNotification() {
+  //   print('=== ЗАПУСК ТЕСТОВОГО УВЕДОМЛЕНИЯ ===');
+  //
+  //   // final notificationService = NotificationService();
+  //
+  //   // Планируем уведомление через 5 секунд
+  //   final testTime = DateTime.now().add(Duration(seconds: 5));
+  //
+  //   print('Время уведомления: $testTime');
+  //
+  //   notificationService.scheduleExpiryNotification(
+  //     id: 'test_notification',
+  //     title: 'Тестовое уведомление',
+  //     body: 'Это тестовое напоминание от MEALSAFE. Работает!',
+  //     scheduledTime: testTime,
+  //   ).then((_) {
+  //     print('Уведомление успешно запланировано');
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text('Тестовое уведомление запланировано на 5 секунд'),
+  //           duration: Duration(seconds: 2),
+  //         )
+  //     );
+  //   }).catchError((error) {
+  //     print('Ошибка при планировании уведомления: $error');
+  //   });
+  //
+  //   print('Метод scheduleExpiryNotification вызван');
+  // }
 
 
   
@@ -1094,15 +1094,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                 _navigateToAdd();
                               },
                             ),
-                            _buildFabOption(
-                              icon: Icons.notifications_active,
-                              label: 'Тест уведомления',
-                              color: Color(0xFFE76F51),
-                              onTap: () {
-                                _toggleFab();
-                                _testNotification();
-                              },
-                            ),
+                            // _buildFabOption(
+                            //   icon: Icons.notifications_active,
+                            //   label: 'Тест уведомления',
+                            //   color: Color(0xFFE76F51),
+                            //   onTap: () {
+                            //     _toggleFab();
+                            //     _testNotification();
+                            //   },
+                            // ),
                           ],
                         ),
                       ],

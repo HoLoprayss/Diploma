@@ -85,7 +85,7 @@ class _EditProductScreenState extends State<EditProductScreen> with SingleTicker
         category: dbCategory,
       );
 
-      realmService.updateExpiryNotifications();
+      // realmService.updateExpiryNotifications();
 
       realmService.close();
       

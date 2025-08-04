@@ -333,7 +333,7 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
                 Navigator.pop(context);
                 _loadProducts();
 
-                realmService.updateExpiryNotifications();
+                // realmService.updateExpiryNotifications();
               },
             ),
           ],
@@ -355,7 +355,7 @@ class _FridgeScreenState extends State<FridgeScreen> with SingleTickerProviderSt
         _isLoading = false;
       });
 
-      realmService.updateExpiryNotifications();
+      // realmService.updateExpiryNotifications();
     });
   }
 
