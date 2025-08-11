@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'MainScreen.dart';
 import 'SplashScreen.dart';
 import 'theme/theme_provider.dart';
-// import 'services/notification_service.dart';
+import 'services/notification_service.dart';
 import 'services/realm_service.dart';
 import 'models/product.dart';
 import 'services/notifications.dart';
@@ -22,6 +22,9 @@ void main() async {
   // // Загружаем и запланировать уведомления для существующих продуктов
   // await _scheduleAllExpiryNotifications();
   // print('Запланированы уведомления для существующих продуктов');
+
+  // Инициализируем сервис уведомлений
+  await NotificationService().init();
 
   // Инициализируем уведомления
   initLocalNotifications();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import 'package:workmanager/workmanager.dart';
 import 'fridge_screen.dart';
 import 'pantry_screen.dart';
 import 'services/realm_service.dart';
@@ -18,7 +19,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'widgets/app_icon.dart';
 import 'constants/app_icons.dart';
 import 'notifications_history_screen.dart';
-import 'services/notification_service.dart';
+import 'services/notifications.dart';
+import 'services/realm_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:workmanager/workmanager.dart';
+import 'package:mealsafe/services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -54,6 +60,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     
     // Загрузка данных
     realmService = RealmService();
+
+    // Загружаем уже показанные уведомления
+    _loadShownNotifications();
     
     // Получение актуальных данных о количестве продуктов
     _updateProductCounts();
@@ -161,50 +170,120 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final fridgeProducts = realmService.getProductsByCategory('Fridge');
     final pantryProducts = realmService.getProductsByCategory('Pantry');
     final allProducts = realmService.getAllProducts();
-    
+
     setState(() {
       _fridgeCount = fridgeProducts.length;
       _pantryCount = pantryProducts.length;
       _totalCount = allProducts.length;
-      
+
       // Подсчет просроченных продуктов и истекающих скоро
       DateTime now = DateTime.now();
       DateTime soonDate = now.add(Duration(days: 3)); // Истекают в ближайшие 3 дня
-      _expiredCount = 0;
-      _expiringSoonCount = 0;
-      _categoryCounts.clear();
-      
-      // Анализируем все продукты
-      for (var product in allProducts) {
-        // Подсчет просроченных
-        if (product.expirationDate != null && product.expirationDate!.isBefore(now)) {
-          _expiredCount++;
-        }
-        // Подсчет истекающих скоро (но не просроченных)
-        else if (product.expirationDate != null && 
-                 product.expirationDate!.isAfter(now) && 
-                 product.expirationDate!.isBefore(soonDate)) {
-          _expiringSoonCount++;
-        }
 
-        // realmService.updateExpiryNotifications();
-        
-        // Подсчет по категориям продуктов (определяем по названию)
-        String categoryIcon = AppIcons.getIconByCategory(product.name.toLowerCase());
-        String categoryName = _getCategoryNameByIcon(categoryIcon);
-        _categoryCounts[categoryName] = (_categoryCounts[categoryName] ?? 0) + 1;
-      }
-      
-      // Находим самую популярную категорию
-      _topCategory = '';
-      int maxCount = 0;
-      _categoryCounts.forEach((category, count) {
-        if (count > maxCount) {
-          maxCount = count;
-          _topCategory = category;
-        }
+      _expiredCount = allProducts
+          .where((product) =>
+      product.expirationDate != null &&
+          product.expirationDate!.isBefore(now))
+          .length;
+
+      _expiringSoonCount = allProducts
+          .where((product) =>
+      product.expirationDate != null &&
+          product.expirationDate!.isAfter(now) &&
+          product.expirationDate!.isBefore(soonDate))
+          .length;
+
+      // Проверяем и планируем уведомления
+      _checkAndScheduleExpiryNotifications(allProducts.toList(), now, soonDate);
+
+      // Подсчет категорий
+      _categoryCounts = {};
+      allProducts.forEach((product) {
+        _categoryCounts.update(product.category, (count) => count + 1, ifAbsent: () => 1);
       });
+
+      if (_categoryCounts.isNotEmpty) {
+        _topCategory = _categoryCounts.keys.reduce((a, b) =>
+        _categoryCounts[a]! > _categoryCounts[b]! ? a : b);
+      }
     });
+  }
+
+  void _checkAndScheduleExpiryNotifications(List<Product> products, DateTime now, DateTime soonDate) {
+    for (final product in products) {
+      if (product.expirationDate != null) {
+        // Проверяем, что срок истекает в ближайшие 3 дня
+        if (product.expirationDate!.isAfter(now) &&
+            product.expirationDate!.isBefore(soonDate)) {
+
+          // Проверяем, не было ли уже уведомления
+          if (!_wasNotificationShown(product.id)) {
+            // Планируем уведомление за 3 дня до окончания срока
+            final notificationTime = product.expirationDate!.subtract(const Duration(days: 3));
+
+            // Планируем уведомление
+            _scheduleNotification(
+              id: product.id,
+              title: 'Срок годности',
+              body: 'Продукт "${product.name}" испортится через 3 дня!',
+              scheduledTime: notificationTime,
+            );
+
+            // Отмечаем, что уведомление запланировано
+            _markNotificationAsShown(product.id);
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _scheduleNotification({
+    required String id,
+    required String title,
+    required String body,
+    required DateTime scheduledTime,
+  }) async {
+    final notificationService = NotificationService();
+
+    // Проверяем, что время уведомления в будущем
+    if (scheduledTime.isAfter(DateTime.now())) {
+      await notificationService.scheduleExpiryNotification(
+        id: id,
+        title: title,
+        body: body,
+        scheduledTime: scheduledTime,
+      );
+    }
+  }
+
+  // Хранилище для отслеживания показанных уведомлений
+  final Set<String> _shownNotifications = <String>{};
+
+// Проверяет, было ли уже показано уведомление для продукта
+  bool _wasNotificationShown(String productId) {
+    return _shownNotifications.contains(productId);
+  }
+
+// Отмечает уведомление как показанное
+  void _markNotificationAsShown(String productId) {
+    _shownNotifications.add(productId);
+    // Сохраняем в SharedPreferences для персистентности
+    _saveShownNotifications();
+  }
+
+// Сохранение в SharedPreferences
+  Future<void> _saveShownNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setStringList('shown_notifications', _shownNotifications.toList());
+  }
+
+// Загрузка из SharedPreferences
+  Future<void> _loadShownNotifications() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('shown_notifications');
+    if (saved != null) {
+      _shownNotifications.addAll(saved);
+    }
   }
   
   // Метод для получения названия категории по иконке
@@ -297,6 +376,44 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   //   print('Метод scheduleExpiryNotification вызван');
   // }
 
+  void _testNotification() async {
+    try {
+      print('=== ЗАПУСК ТЕСТОВОГО УВЕДОМЛЕНИЯ ===');
+
+      const String testTaskId = 'test_notification_task';
+      const String _testTaskName = 'test_notification'; // Добавь здесь
+
+
+      // Регистрируем однократную задачу
+      await Workmanager().registerOneOffTask(
+        testTaskId,
+        _testTaskName, // Используем правильное имя задачи
+        initialDelay: Duration(seconds: 10),
+        constraints: Constraints(
+          networkType: NetworkType.connected,
+          requiresBatteryNotLow: true,
+        ),
+      );
+
+      print('Тестовая задача запланирована на 10 секунд');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Тестовое уведомление запланировано через 10 секунд'),
+            duration: Duration(seconds: 3),
+          )
+      );
+    } catch (e) {
+      print('Ошибка при планировании тестового уведомления: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка: $e'),
+            backgroundColor: Colors.red,
+          )
+      );
+    }
+  }
+
 
   
   @override
@@ -359,6 +476,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         ),
       ),
       actions: [
+
+        // Кнопка тестового уведомления
+        IconButton(
+          icon: Icon(Icons.bug_report, color: Colors.black),
+          tooltip: 'Тест уведомления',
+          onPressed: _testNotification,
+        ),
+
         IconButton(
           icon: Icon(Icons.notifications_outlined, color: Color(0xFF2A9D8F)),
           onPressed: () {
