@@ -221,12 +221,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             // Планируем уведомление за 3 дня до окончания срока
             final notificationTime = product.expirationDate!.subtract(const Duration(days: 3));
 
-            // Планируем уведомление
-            _scheduleNotification(
-              id: product.id,
-              title: 'Срок годности',
-              body: 'Продукт "${product.name}" испортится через 3 дня!',
-              scheduledTime: notificationTime,
+            // Сохраняем информацию для фоновой проверки
+            _scheduleExpiryNotification(
+                id: product.id,
+                name: product.name,
+                expiryDate: product.expirationDate!
             );
 
             // Отмечаем, что уведомление запланировано
@@ -237,23 +236,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _scheduleNotification({
+  Future<void> _scheduleExpiryNotification({
     required String id,
-    required String title,
-    required String body,
-    required DateTime scheduledTime,
+    required String name,
+    required DateTime expiryDate,
   }) async {
-    final notificationService = NotificationService();
+    final prefs = await SharedPreferences.getInstance();
+    final notifications = prefs.getStringList('expiry_notifications') ?? [];
+    print('Запланированные уведомления: $notifications');
 
-    // Проверяем, что время уведомления в будущем
-    if (scheduledTime.isAfter(DateTime.now())) {
-      await notificationService.scheduleExpiryNotification(
-        id: id,
-        title: title,
-        body: body,
-        scheduledTime: scheduledTime,
-      );
-    }
+    // Форматируем данные уведомления
+    final notificationData = [
+      id,
+      name,
+      expiryDate.toIso8601String()
+    ].join('|');
+
+    notifications.add(notificationData);
+    await prefs.setStringList('expiry_notifications', notifications);
   }
 
   // Хранилище для отслеживания показанных уведомлений

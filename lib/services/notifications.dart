@@ -17,7 +17,7 @@ const String _channelName = 'Напоминания о сроках годнос
 const String _channelDescription = 'Уведомления о продуктах, срок годности которых приближается';
 
 // Проверяем каждые 15 минут
-const Duration _frequency = Duration(minutes: 15);
+const Duration _frequency = Duration(seconds: 30);
 
 void initLocalNotifications() async {
   if (Platform.isWindows) {
@@ -26,8 +26,7 @@ void initLocalNotifications() async {
 
   // Инициализируем WorkManager
   Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: true, // Оставь true для отладки
+    callbackDispatcher
   );
 
   // Регистрируем периодическую задачу
@@ -52,11 +51,8 @@ void callbackDispatcher() {
       print('=== WorkManager задача запущена: $task ===');
 
       final FlutterLocalNotificationsPlugin notifPlugin = FlutterLocalNotificationsPlugin();
-
-      // Инициализация часовых поясов
       tz.initializeTimeZones();
 
-      // Настройка уведомлений
       const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
       const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
 
@@ -65,18 +61,15 @@ void callbackDispatcher() {
         iOS: iosSettings,
       );
 
-      // Инициализация уведомлений
       await notifPlugin.initialize(settings);
       print('Уведомления инициализированы');
 
-      // Обработка разных типов задач
       if (task == _testTaskName) {
         print('Запуск тестового уведомления');
         await _showTestNotification(notifPlugin);
-      } else {
-        print('Запуск периодической проверки');
-        await _showTestNotification(notifPlugin); // Для теста
-        // await _checkExpiringProducts(notifPlugin);
+      } else if (task == _taskName) {
+        print('Запуск проверки сроков годности');
+        await _checkExpiringProducts(notifPlugin);
       }
 
       print('Задача $task выполнена успешно');
@@ -87,6 +80,66 @@ void callbackDispatcher() {
       return Future.value(false);
     }
   });
+}
+
+Future<void> _checkExpiringProducts(FlutterLocalNotificationsPlugin notifPlugin) async {
+  try {
+    print('=== НАЧАЛО ПРОВЕРКИ СРОКОВ ГОДНОСТИ ===');
+
+    final prefs = await SharedPreferences.getInstance();
+    final notifications = prefs.getStringList('expiry_notifications') ?? [];
+
+    print('Найдено уведомлений: ${notifications.length}');
+
+    final now = DateTime.now();
+    print('Текущее время: $now');
+
+    final notificationsToKeep = <String>[];
+
+    for (int i = 0; i < notifications.length; i++) {
+      final notificationData = notifications[i];
+      print('Проверка уведомления #$i: $notificationData');
+
+      final parts = notificationData.split('|');
+      if (parts.length != 3) {
+        print('Некорректный формат данных, пропускаем');
+        notificationsToKeep.add(notificationData);
+        continue;
+      }
+
+      final productId = parts[0];
+      final productName = parts[1];
+      final expiryDate = DateTime.parse(parts[2]);
+      print('Продукт: $productName, ID: $productId, Срок годности: $expiryDate');
+
+      // Рассчитываем дату для уведомления (за 3 дня до окончания срока)
+      final notificationDate = expiryDate.subtract(const Duration(days: 3));
+      print('Дата уведомления: $notificationDate');
+
+      // Проверяем, что пришло время показать уведомление
+      if (notificationDate.isBefore(now)) {
+        print('ВРЕМЯ УВЕДОМЛЕНИЯ НАСТУПИЛО!');
+        await _showExpiryNotification(
+            notifPlugin,
+            productId,
+            productName,
+            expiryDate
+        );
+        // Не добавляем в список для сохранения
+      } else {
+        print('Время уведомления еще не наступило');
+        notificationsToKeep.add(notificationData);
+      }
+    }
+
+    print('Сохраняем ${notificationsToKeep.length} уведомлений');
+    await prefs.setStringList('expiry_notifications', notificationsToKeep);
+    print('=== КОНЕЦ ПРОВЕРКИ СРОКОВ ГОДНОСТИ ===');
+
+  } catch (e, stackTrace) {
+    print('Ошибка при проверке сроков годности: $e');
+    print(stackTrace);
+  }
 }
 
 // Метод для тестового уведомления
@@ -122,4 +175,36 @@ Future<void> _showTestNotification(FlutterLocalNotificationsPlugin notifPlugin) 
     print('Ошибка при показе тестового уведомления: $e');
     print(stackTrace);
   }
+}
+
+Future<void> _showExpiryNotification(
+    FlutterLocalNotificationsPlugin notifPlugin,
+    String productId,
+    String productName,
+    DateTime expiryDate
+    ) async {
+  const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    _channelId,
+    _channelName,
+    channelDescription: _channelDescription,
+    importance: Importance.high,
+    priority: Priority.high,
+    playSound: true,
+    enableVibration: true,
+  );
+
+  const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+
+  const NotificationDetails notificationDetails = NotificationDetails(
+    android: androidDetails,
+    iOS: iosDetails,
+  );
+
+  await notifPlugin.show(
+    productId.hashCode,
+    'Срок годности',
+    'Продукт "$productName" скоро испортится!',
+    notificationDetails,
+    payload: productId,
+  );
 }
